@@ -3,8 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 
-/data/index/
-/data/processed/
+/data/
 logs/
 /models/
 /.qdrant/*
