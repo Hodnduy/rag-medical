@@ -34,13 +34,37 @@ class Chunker:
 
     @staticmethod
     def _dedup(lines: List[str]) -> List[str]:
-        out, prev = [], None
-        for ln in lines:
-            if prev is not None and ln.strip().lower() == prev.strip().lower():
-                continue
-            out.append(ln); prev = ln
-        return out
+        out = []
+        seen_in_block = set()
+        in_bullet_block = False
 
+        def norm(s: str) -> str:
+            return re.sub(r"\s+", " ", s.strip().lower())
+        
+        for ln in lines:
+            is_bullet = ln.startswith("- ")
+            if is_bullet:
+                if not in_bullet_block:
+                    in_bullet_block = True
+                    seen_in_block.clear()
+                key = norm(ln[2:])
+                if key in seen_in_block:
+                    continue
+                seen_in_block.add(key)
+                out.append(ln)
+            else:
+                in_bullet_block = False
+                out.append(ln)
+        return out
+    
+    def _is_loose_heading(ln: str) -> bool:
+        w = ln.strip()
+        if not w or len(w.split()) > 5: 
+            return False
+        if re.search(r"[.:;!?]$", w): 
+            return False
+        return bool(re.match(r"^[A-Z][A-Za-z0-9 ,-/()']+$", w))
+    
     @staticmethod
     def _join_to_paragraphs(lines: List[str]) -> str:
         paragraphs, buff = [], []
@@ -49,8 +73,9 @@ class Chunker:
                 paragraphs.append(" ".join(buff).strip())
                 buff.clear()
         for ln in lines:
-            if ln.startswith("- "):
-                flush(); paragraphs.append(ln)
+            if ln.startswith("- ") or _heading_pat.match(ln) or Chunker._is_loose_heading(ln):
+                flush()
+                paragraphs.append(ln)
             else:
                 buff.append(ln)
         flush()
