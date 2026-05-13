@@ -34,3 +34,21 @@ Use `scripts/run_chunking.py` to chunking data with this command:
 ```bash
 python -m scripts.run_chunking --in data/ --out data/chunk_data
 ```
+
+### Phase 3 — Vector Storage & Embedding
+
+In this phase, the cleaned chunks are transformed into high-dimensional vectors and stored in a vector database for efficient retrieval.
+
+- **Embedding Model**: Using `BAAI/bge-large-en-v1.5` (Top-tier on MTEB leaderboard) with custom query prefixes.
+- **Vector Store**: Implemented **ChromaDB** with a persistent local backend.
+- **Architecture**: Decoupled infrastructure logic into `ChromaManager` to ensure modularity.
+
+#### How to run Embedding:
+```bash
+# Ensure you have cleaned data in data/
+python -m scripts.run_embedding
+```
+#### How to test Retrieval:
+```bash
+python -m scripts.query
+```

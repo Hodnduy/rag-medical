@@ -155,16 +155,20 @@ class Chunker:
         units = self._sentences_for_chunking(cleaned)
         texts = self._chunk_units(units)
 
+        context_prefix = f"Condition: {condition}. Section: {section}. "
+
         out: List[Dict[str, Any]] = []
         for i, txt in enumerate(texts):
+            enriched_text = context_prefix + txt
             out.append({
                 "id": f"{condition}:{section}:{i}",
-                "text": txt,
+                "text": enriched_text,
                 "meta": {
                     "condition": condition,
                     "section": section,
                     "url": url,
                     "word_count": self._wc(txt),
+                    "raw_content": txt,
                     "chunk_index": i,
                     "chunk_count": len(texts),
                     "cleaned": True,
