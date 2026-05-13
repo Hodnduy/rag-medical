@@ -2,43 +2,51 @@ import chromadb
 from pathlib import Path
 from src.infrastructure.embeddings.embedder import Embedder
 from src.infrastructure.vectorstores.chroma_logic import ChromaManager
+from src.infrastructure.rerank.reranker import MedicalReranker
 
 def main():
-    # 1. Embedder
-    embedder = Embedder(
-        model_name="BAAI/bge-large-en-v1.5",
-        show_progress=False
-    )
-
-    # 2. Connect to ChromaDB
+    embedder = Embedder(show_progress=False)
     collection = ChromaManager()
+    reranker = MedicalReranker()
 
-    # 3. User Question
     user_query = "What are the common symptoms of abdominal aortic aneurysm?"
     print(f"\nSearching for: {user_query}")
 
-    # 4. Use encode_query to add prefix for BGE model
     query_vector = embedder.encode_query(user_query).tolist()
 
-    # 5. Query top 3
-    results = collection.query(
-        query_embeddings=[query_vector],
-        n_results=3
-    )
+    query_vector = embedder.encode_query(user_query).tolist()
+    raw_results = collection.query(query_embeddings=[query_vector], n_results=10)
 
-    # 6. Print result
+    if not raw_results['distances'] or not raw_results['distances'][0]:
+        print(">>> Answer: My database is currently empty.")
+        return
+
+    # EARLY EXIT (DISTANCE GATE)
+    best_distance = raw_results['distances'][0][0]
+    DISTANCE_THRESHOLD = 1.0 
+
+    if best_distance > DISTANCE_THRESHOLD:
+        print(f"\n[Fast Exit] Best Distance ({best_distance:.4f}) exceeds threshold ({DISTANCE_THRESHOLD}).")
+        print(">>> Answer: I'm sorry, I don't have information on this topic in database.")
+        return
+
+    candidates = []
+    for i in range(len(raw_results['documents'][0])):
+        candidates.append({
+            "content": raw_results['documents'][0][i],
+            "metadata": raw_results['metadatas'][0][i],
+            "distance": raw_results['distances'][0][i]
+        })
+
+    print(f"Reranking candidates...")
+    final_results = reranker.rerank(user_query, candidates, top_n=3)
+
     print("\n--- TOP RESULTS ---")
-    for i in range(len(results['documents'][0])):
-        content = results['documents'][0][i]
-        metadata = results['metadatas'][0][i]
-        distance = results['distances'][0][i]
-        
-        # Distance càng nhỏ thì độ tương đồng càng cao (L2 distance)
-        print(f"\nResult {i+1} (Score: {distance:.4f}):")
-        print(f"Condition: {metadata['condition']}")
-        print(f"URL: {metadata['url']}")
-        print(f"Content: {content[:200]}...") 
-        print("-" * 30)
+    for i, res in enumerate(final_results):
+        print(f"\nRank {i+1} | Rerank Score: {res['rerank_score']:.4f} | Vector Distance: {res['distance']:.4f}")
+        print(f"Condition: {res['metadata']['condition']}")
+        print(f"Content: {res['content'][:200]}...")
+        print("-" * 40)
 
 if __name__ == "__main__":
     main()
