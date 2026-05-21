@@ -9,9 +9,9 @@ def main():
     embedder = Embedder(model_name="BAAI/bge-large-en-v1.5", normalize=True, batch_size=32)
     chroma_manager = ChromaManager()
 
-    chunked_file = Path("data/nhs_chunking_cleaned.jsonl")
+    chunked_file = Path("data/chunk_data/nhs_cleaned.jsonl")
     if not chunked_file.exists():
-        raise FileNotFoundError("Run run_chunking.py first")
+        raise FileNotFoundError("Run run_chunking.py first to create data/chunk_data/nhs_cleaned.jsonl")
 
     ids, embeddings_text, documents_to_store, metadatas = [], [], [], []
     

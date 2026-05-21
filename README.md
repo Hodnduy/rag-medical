@@ -32,7 +32,7 @@ Just run all cell in `notebooks/eda_preprocessing.ipynb`. It create cleaned file
 #### Chunking
 Use `scripts/run_chunking.py` to chunking data with this command:
 ```bash
-python -m scripts.run_chunking --in data/ --out data/chunk_data
+python -m scripts.run_chunking --in-dir data/ --out-dir data/chunk_data
 ```
 
 ### Phase 3 — Vector Storage & Embedding
@@ -48,7 +48,39 @@ In this phase, the cleaned chunks are transformed into high-dimensional vectors 
 # Ensure you have cleaned data in data/
 python -m scripts.run_embedding
 ```
-#### How to test Retrieval:
+#### How to test Retrieval & Reranking:
+The retrieval process involves an **Early Exit Distance Gate** to filter out irrelevant queries, followed by a **Cross-Encoder Reranker** (`BAAI/bge-reranker-v2-m3`) to accurately re-order the retrieved candidates.
+
 ```bash
 python -m scripts.query
 ```
+
+---
+
+## Next Steps (To-Do)
+
+### Phase 4 — LLM Generation (The "G" in RAG)
+- **Objective**: Integrate a Large Language Model (e.g., OpenAI `gpt-4o`, Google Gemini, Anthropic, or local open-source models like Llama-3/Mistral) to generate final answers.
+- **Tasks**:
+  - Build the prompt template combining the user's query and the Top-K reranked context.
+  - Implement a `Generator` class in `src/infrastructure/llm/`.
+  - Create a core `RAGService` in `src/application/` to orchestrate the full pipeline: Query -> Embed -> Retrieve -> Rerank -> Generate.
+
+### Phase 5 — Backend API & Services (FastAPI)
+- **Objective**: Serve the RAG system as a REST API.
+- **Tasks**:
+  - Set up FastAPI with routes (e.g., `POST /api/chat`).
+  - Implement request validation, error handling, and structured JSON responses.
+  - Setup dependency injection for the Embedder, ChromaManager, Reranker, and Generator.
+
+### Phase 6 — User Interface (UI)
+- **Objective**: Build a user-friendly frontend to interact with the Medical Chatbot.
+- **Tasks**:
+  - Use **Streamlit** or **Gradio** for a quick conversational UI prototype.
+  - Alternatively, build a modern Web App using **React/Next.js** for a premium chat experience.
+
+### Phase 7 — Evaluation & Observability
+- **Objective**: Measure the quality of answers and monitor the system.
+- **Tasks**:
+  - Implement RAG Evaluation metrics (Faithfulness, Answer Relevance, Context Precision) using tools like Ragas or TruLens.
+  - Add observability logs and tracing using Langfuse or Phoenix.

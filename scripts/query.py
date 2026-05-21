@@ -13,8 +13,6 @@ def main():
     print(f"\nSearching for: {user_query}")
 
     query_vector = embedder.encode_query(user_query).tolist()
-
-    query_vector = embedder.encode_query(user_query).tolist()
     raw_results = collection.query(query_embeddings=[query_vector], n_results=10)
 
     if not raw_results['distances'] or not raw_results['distances'][0]:

@@ -57,6 +57,7 @@ class Chunker:
                 out.append(ln)
         return out
     
+    @staticmethod
     def _is_loose_heading(ln: str) -> bool:
         w = ln.strip()
         if not w or len(w.split()) > 5: 
