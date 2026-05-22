@@ -55,16 +55,30 @@ The retrieval process involves an **Early Exit Distance Gate** to filter out irr
 python -m scripts.query
 ```
 
+### Phase 4 — LLM Generation (The "G" in RAG)
+
+The final piece of the RAG pipeline: a Large Language Model generates answers grounded in the retrieved context.
+
+- **LLM**: `Qwen/Qwen3-4B-Instruct-2507` served locally via **vLLM** (`http://127.0.0.1:8000/v1`).
+- **Prompt Engineering**: System prompt with strict anti-hallucination rules — the model is forbidden from fabricating information outside the provided documents.
+- **Architecture**: `MedicalLLMGenerator` implements the `LLMGenerator` ABC (domain layer) and reads all config from a unified `Settings` (pydantic).
+- **Full Pipeline**: `MedicalRAGPipeline.run()` now orchestrates: **Query → Embed → Hybrid Search → Rerank → Generate**.
+
+#### How to run the full RAG pipeline:
+```bash
+# Run local LLM first
+vllm-metal --model Qwen/Qwen3-4B-Instruct-2507 --port 8000
+
+# Make sure vLLM is running with Qwen3-4B
+python -m scripts.run_rag --query "What are the symptoms of diabetes?"
+
+# Or with custom top_n
+python -m scripts.run_rag --query "I have a headache and fever" --top-n 5
+```
+
 ---
 
 ## Next Steps (To-Do)
-
-### Phase 4 — LLM Generation (The "G" in RAG)
-- **Objective**: Integrate a Large Language Model (e.g., OpenAI `gpt-4o`, Google Gemini, Anthropic, or local open-source models like Llama-3/Mistral) to generate final answers.
-- **Tasks**:
-  - Build the prompt template combining the user's query and the Top-K reranked context.
-  - Implement a `Generator` class in `src/infrastructure/llm/`.
-  - Create a core `RAGService` in `src/application/` to orchestrate the full pipeline: Query -> Embed -> Retrieve -> Rerank -> Generate.
 
 ### Phase 5 — Backend API & Services (FastAPI)
 - **Objective**: Serve the RAG system as a REST API.

@@ -19,6 +19,7 @@ dependencies = [
     "vllm-metal==0.1.0; sys_platform == 'darwin'",
     "mlx==0.31.2",
     "rank-bm25==0.2.2",
+    "openai==2.37.0",
 ]
 
 [dependency-groups]
