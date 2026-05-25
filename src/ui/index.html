@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Medical RAG — AI-powered medical Q&A system with trusted NHS UK health data.">
+    <title>Medical RAG — AI Health Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Background animated gradient orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="url(#logo-gradient)"/>
+                            <defs>
+                                <linearGradient id="logo-gradient" x1="2" y1="2" x2="22" y2="22">
+                                    <stop stop-color="#06D6A0"/>
+                                    <stop offset="1" stop-color="#118AB2"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <span class="logo-text">Medical RAG</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+
+            <button class="new-chat-btn" id="newChatBtn">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>New Conversation</span>
+            </button>
+
+            <div class="sidebar-section">
+                <h3 class="sidebar-section-title">Suggested Questions</h3>
+                <div class="suggestion-list" id="suggestionList">
+                    <button class="suggestion-item" data-query="What are the symptoms of diabetes?">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+                        </svg>
+                        <span>What are the symptoms of diabetes?</span>
+                    </button>
+                    <button class="suggestion-item" data-query="I have a headache and fever, what should I do?">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+                        </svg>
+                        <span>Headache and fever remedies</span>
+                    </button>
+                    <button class="suggestion-item" data-query="What causes high blood pressure?">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+                        </svg>
+                        <span>Causes of high blood pressure</span>
+                    </button>
+                    <button class="suggestion-item" data-query="How is asthma diagnosed and treated?">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+                        </svg>
+                        <span>Asthma diagnosis & treatment</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="data-badge">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M7 1L1 4l6 3 6-3-6-3zM1 10l6 3 6-3M1 7l6 3 6-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Powered by NHS UK Data</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <div class="top-bar-title">
+                    <h1>AI Health Assistant</h1>
+                    <div class="status-indicator" id="statusIndicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Ready</span>
+                    </div>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="top-n-control">
+                        <label for="topNSelect">Sources:</label>
+                        <select id="topNSelect">
+                            <option value="3" selected>3</option>
+                            <option value="5">5</option>
+                            <option value="7">7</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Chat Messages -->
+            <div class="chat-area" id="chatArea">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-icon">
+                        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+                            <circle cx="28" cy="28" r="27" stroke="url(#welcome-grad)" stroke-width="2" opacity="0.3"/>
+                            <path d="M28 14v28M14 28h28" stroke="url(#welcome-grad)" stroke-width="3" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="welcome-grad" x1="0" y1="0" x2="56" y2="56">
+                                    <stop stop-color="#06D6A0"/>
+                                    <stop offset="1" stop-color="#118AB2"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h2>How can I help you today?</h2>
+                    <p>Ask me any medical question — I'll retrieve relevant information from trusted NHS UK health data to give you an accurate, grounded answer.</p>
+                    <div class="welcome-cards">
+                        <button class="welcome-card" data-query="What are the early signs of type 2 diabetes?">
+                            <div class="welcome-card-icon">🩺</div>
+                            <div class="welcome-card-text">
+                                <strong>Symptoms Check</strong>
+                                <span>Early signs of type 2 diabetes</span>
+                            </div>
+                        </button>
+                        <button class="welcome-card" data-query="How can I lower my cholesterol naturally?">
+                            <div class="welcome-card-icon">💊</div>
+                            <div class="welcome-card-text">
+                                <strong>Treatment Info</strong>
+                                <span>Lower cholesterol naturally</span>
+                            </div>
+                        </button>
+                        <button class="welcome-card" data-query="What are the risk factors for heart disease?">
+                            <div class="welcome-card-icon">❤️</div>
+                            <div class="welcome-card-text">
+                                <strong>Risk Factors</strong>
+                                <span>Heart disease risk factors</span>
+                            </div>
+                        </button>
+                        <button class="welcome-card" data-query="When should I see a doctor for back pain?">
+                            <div class="welcome-card-icon">🏥</div>
+                            <div class="welcome-card-text">
+                                <strong>Medical Advice</strong>
+                                <span>When to see a doctor for back pain</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages will be appended here -->
+                <div class="messages-container" id="messagesContainer"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <div class="input-container" id="inputContainer">
+                        <textarea
+                            id="queryInput"
+                            placeholder="Describe your symptoms or ask a medical question..."
+                            rows="1"
+                            maxlength="2000"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn" disabled aria-label="Send message">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M18 2L9 11M18 2l-5 16-4-7-7-4 16-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="disclaimer">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1"/>
+                            <path d="M6 4v3M6 8.5v.01" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                        </svg>
+                        This AI assistant provides information from NHS UK data. Always consult a healthcare professional for medical advice.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
