@@ -20,6 +20,8 @@ dependencies = [
     "mlx==0.31.2",
     "rank-bm25==0.2.2",
     "openai==2.37.0",
+    "fastapi==0.136.0",
+    "uvicorn==0.47.0",
 ]
 
 [dependency-groups]

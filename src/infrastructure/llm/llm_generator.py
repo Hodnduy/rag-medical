@@ -33,11 +33,8 @@ class MedicalLLMGenerator:
         "YOUR TASK: Answer the user's question BASED ENTIRELY on the "
         "PROVIDED DOCUMENTS below.\n\n"
         "STRICT RULES:\n"
-        "1. DO NOT fabricate information, medications, or treatments "
-        "that are not in the documents.\n"
-        "2. If the documents lack sufficient information, ONLY output: 'I could not find sufficient medical evidence in the documents.' Do not generate any other text."
-        "to answer, say clearly: 'I could not find sufficient medical "
-        "evidence in the documents to answer this question.'\n"
+        "1. DO NOT fabricate information, medications, or treatments that are not in the documents.\n"
+        "2. If the documents lack sufficient information, ONLY output exactly: 'I could not find sufficient medical evidence in the documents.' Do not generate any other text.\n"
         "3. Always remind the user to consult a real doctor.\n"
         "4. Cite the relevant condition/section when possible.\n"
         "5. Keep the answer clear, structured, and concise."
@@ -102,7 +99,8 @@ class MedicalLLMGenerator:
                     "User:", 
                     "Assistant:", 
                     "Observation:", 
-                    "I could not find"
+                    "I could not find",
+                    "--- END ---"
                 ]
             )
             return response.choices[0].message.content.strip()
