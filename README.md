@@ -1,100 +1,231 @@
-# RAG-Medical — Retrieval-Augmented Generation System For Medical Q&A
+# RAG-Medical — Retrieval-Augmented Generation System for Medical Q&A
 
-A personal project demonstrating a **Retrieval-Augmented Generation (RAG)** pipeline for **medical Q&A** tasks.  
-The goal is to build an **end-to-end RAG system** capable of answering medical-related questions using trusted health data sources such as 
-[NHS UK](https://www.nhs.uk/conditions/).
+> A **Retrieval-Augmented Generation (RAG)** pipeline designed for medical Q&A tasks. Users can input symptoms or medical questions, and the system retrieves trusted health data sourced from [NHS UK](https://www.nhs.uk/conditions/) to generate accurate, grounded answers.
 
-You can input your symptoms and the RAG will find the condition which corresponding to your symptoms.
 ---
 
-## Current Progress
+## Table of Contents
 
-### Phase 1 — Data Crawling
-- Implemented a custom web crawler to collect structured medical data from NHS conditions pages.
-- Extracted and stored data with fields:
-  ```json
-  {
-    "condition": "...",
-    "section": "Symptoms",
-    "url": "https://www.nhs.uk/conditions/...",
-    "content": "Symptoms of ..."
-  }
-  ```
-  
-### Phase 2 — Data Cleaning & Chunking
+1. [System Requirements](#system-requirements)
+2. [Installation](#installation)
+3. [Running the Data Pipeline](#running-the-data-pipeline)
+   - [Step 1 — Web Crawling](#step-1--web-crawling)
+   - [Step 2 — Data Cleaning](#step-2--data-cleaning)
+   - [Step 3 — Chunking](#step-3--chunking)
+   - [Step 4 — Embedding & Vector Storage](#step-4--embedding--vector-storage)
+4. [Running the RAG Pipeline](#running-the-rag-pipeline)
+   - [Start the LLM Server](#start-the-llm-server)
+   - [Run RAG via CLI](#run-rag-via-cli)
+   - [Run RAG via API](#run-rag-via-api)
+5. [Makefile Commands](#makefile-commands)
 
-After crawling, the raw JSON data from `nhs_conditions.jsonl` needs to be **cleaned and normalized** before being chunking.
+---
 
-#### Data Cleaning
-Use the provided notebook to clean and standardize text:
-Just run all cell in `notebooks/eda_preprocessing.ipynb`. It create cleaned file `nhs_cleaned.jsonl`
+## System Requirements
 
-#### Chunking
-Use `scripts/run_chunking.py` to chunking data with this command:
+| Component       | Requirement / Version                  |
+|-----------------|----------------------------------------|
+| **Python**      | 3.12                                   |
+| **uv**          | >= 0.7 (Package Manager)               |
+| **OS**          | macOS (Apple Silicon) — for vLLM Metal |
+| **RAM**         | >= 16 GB (recommended for local LLM)   |
+| **Disk Space**  | >= 10 GB (model weights + vector DB)   |
+
+---
+
+## Installation
+
+### 1. Clone the repository
+
 ```bash
-python -m scripts.run_chunking --in-dir data/ --out-dir data/chunk_data
+git clone https://github.com/Hodnduy/rag-medical
+cd rag-medical
 ```
 
-### Phase 3 — Vector Storage & Embedding
-
-In this phase, the cleaned chunks are transformed into high-dimensional vectors and stored in a vector database for efficient retrieval.
-
-- **Embedding Model**: Using `BAAI/bge-large-en-v1.5` (Top-tier on MTEB leaderboard) with custom query prefixes.
-- **Vector Store**: Implemented **ChromaDB** with a persistent local backend.
-- **Architecture**: Decoupled infrastructure logic into `ChromaManager` to ensure modularity.
-
-#### How to run Embedding:
-```bash
-# Ensure you have cleaned data in data/
-python -m scripts.run_embedding
-```
-#### How to test Retrieval & Reranking:
-The retrieval process involves an **Early Exit Distance Gate** to filter out irrelevant queries, followed by a **Cross-Encoder Reranker** (`BAAI/bge-reranker-v2-m3`) to accurately re-order the retrieved candidates.
+### 2. Install `uv` (if not already installed)
 
 ```bash
-python -m scripts.query
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or via Homebrew
+brew install uv
 ```
 
-### Phase 4 — LLM Generation (The "G" in RAG)
+### 3. Install dependencies
 
-The final piece of the RAG pipeline: a Large Language Model generates answers grounded in the retrieved context.
-
-- **LLM**: `Qwen/Qwen3-4B-Instruct-2507` served locally via **vLLM** (`http://127.0.0.1:8000/v1`).
-- **Prompt Engineering**: System prompt with strict anti-hallucination rules — the model is forbidden from fabricating information outside the provided documents.
-- **Architecture**: `MedicalLLMGenerator` implements the `LLMGenerator` ABC (domain layer) and reads all config from a unified `Settings` (pydantic).
-- **Full Pipeline**: `MedicalRAGPipeline.run()` now orchestrates: **Query → Embed → Hybrid Search → Rerank → Generate**.
-
-#### How to run the full RAG pipeline:
 ```bash
-# Run local LLM first
+# Set up a virtual environment and install all dependencies
+make install
+# Or run directly:
+uv sync
+```
+
+This will automatically create a `.venv/` directory and install all required packages from `pyproject.toml`.
+
+---
+
+## Running the Data Pipeline
+
+> **Note:** If you already have data populated in `data/` and want to test the interactive pipeline, you can proceed directly to [Running the RAG Pipeline](#running-the-rag-pipeline).
+
+### Step 1 — Web Crawling
+
+Fetch raw medical descriptions from NHS UK:
+
+```bash
+make crawl
+# Or run directly:
+uv run python scripts/ingest_nhs.py
+```
+
+**Output:** `data/nhs_conditions.jsonl` — containing fields like `condition`, `section`, `url`, and `content`.
+
+### Step 2 — Data Cleaning
+
+Open and run all cells inside the following Jupyter notebook:
+
+```
+notebooks/eda_preprocessing.ipynb
+```
+
+**Output:** `data/nhs_cleaned.jsonl` — cleaned, standard text corpus without web artifacts.
+
+### Step 3 — Chunking
+
+Split the cleaned documents into uniform chunks:
+
+```bash
+make chunk
+# Or run manually with custom arguments:
+uv run python scripts/run_chunking.py \
+    --in-dir data/ \
+    --out-dir data/ \
+    --max-words 530 \
+    --overlap-words 80 \
+    --min-words 40
+```
+
+| Parameter          | Default | Description                                  |
+|--------------------|---------|----------------------------------------------|
+| `--max-words`      | 530     | Maximum word count per chunk                 |
+| `--overlap-words`  | 80      | Word overlap between consecutive chunks       |
+| `--min-words`      | 40      | Discard any chunk with fewer than X words    |
+
+**Output:** `data/nhs_chunking.jsonl`
+
+### Step 4 — Embedding & Vector Storage
+
+Embed the chunks and ingest them into ChromaDB:
+
+```bash
+make embed
+# Or run directly:
+uv run python scripts/run_embedding.py
+```
+
+- **Embedding Model:** `BAAI/bge-large-en-v1.5`
+- **Vector Database:** ChromaDB (stored locally under `data/vector_db/`)
+- **Sparse Indexing:** `data/bm25_corpus.pkl` (for hybrid search)
+
+> The first execution will download the embedding model weights (~1.3 GB). Subsequent runs will be loaded from local cache.
+
+### Run All Pipeline Steps Automatically
+
+```bash
+make pipeline
+```
+
+This runs `crawl` → `chunk` → `embed` sequentially.
+
+---
+
+## Running the RAG Pipeline
+
+### Start the LLM Server
+
+The pipeline uses **vLLM** to serve `Qwen/Qwen3-4B-Instruct-2507` locally. Start the server before running the query commands:
+
+```bash
+# On macOS Apple Silicon (using vLLM Metal)
 vllm-metal --model Qwen/Qwen3-4B-Instruct-2507 --port 8000
+```
 
-# Make sure vLLM is running with Qwen3-4B
-python -m scripts.run_rag --query "What are the symptoms of diabetes?"
+> The first time you serve this model, it will download weights (~8 GB). The server is ready once you see: `Uvicorn running on http://127.0.0.1:8000`.
 
-# Or with custom top_n
-python -m scripts.run_rag --query "I have a headache and fever" --top-n 5
+To verify your local model endpoint is reachable:
+
+```bash
+uv run python scripts/test_model.py
+```
+
+### Run RAG via CLI
+
+Once the server is running, open a **new terminal window** and query the system:
+
+```bash
+# Run with default query
+make rag
+
+# Run with custom query
+make rag QUERY="I have a headache and fever"
+
+# Adjust the number of retrieved context documents
+make rag QUERY="What are the symptoms of diabetes?" TOP_N=5
+
+# Or run using Python directly
+uv run python scripts/run_rag.py --query "What are the symptoms of diabetes?" --top-n 5
+```
+
+**Example Output:**
+
+```
+============================================================
+Query: What are the symptoms of diabetes?
+============================================================
+
+──────────────────────────────────────────────────────────────
+LLM Answer  (generated in 3.25s)
+──────────────────────────────────────────────────────────────
+
+Based on the provided medical documents, the common symptoms of diabetes include...
+
+──────────────────────────────────────────────────────────────
+Sources (3 documents)
+──────────────────────────────────────────────────────────────
+
+  [1] Type 2 diabetes | Symptoms
+      Rerank Score: 0.9823
+      Preview: The main symptoms of diabetes include...
+```
+
+### Run RAG via API
+
+Start the FastAPI application:
+
+```bash
+uv run python scripts/run_api.py
+```
+
+The server listens on `http://localhost:8080`. Query the endpoint via curl:
+
+```bash
+curl -X POST http://localhost:8080/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What are the symptoms of diabetes?"}'
 ```
 
 ---
 
-## Next Steps (To-Do)
+## Makefile Commands
 
-### Phase 5 — Backend API & Services (FastAPI)
-- **Objective**: Serve the RAG system as a REST API.
-- **Tasks**:
-  - Set up FastAPI with routes (e.g., `POST /api/chat`).
-  - Implement request validation, error handling, and structured JSON responses.
-  - Setup dependency injection for the Embedder, ChromaManager, Reranker, and Generator.
-
-### Phase 6 — User Interface (UI)
-- **Objective**: Build a user-friendly frontend to interact with the Medical Chatbot.
-- **Tasks**:
-  - Use **Streamlit** or **Gradio** for a quick conversational UI prototype.
-  - Alternatively, build a modern Web App using **React/Next.js** for a premium chat experience.
-
-### Phase 7 — Evaluation & Observability
-- **Objective**: Measure the quality of answers and monitor the system.
-- **Tasks**:
-  - Implement RAG Evaluation metrics (Faithfulness, Answer Relevance, Context Precision) using tools like Ragas or TruLens.
-  - Add observability logs and tracing using Langfuse or Phoenix.
+| Command            | Description                                              |
+|--------------------|----------------------------------------------------------|
+| `make install`      | Installs dependencies using `uv sync`                     |
+| `make crawl`        | Ingests raw data from NHS UK website                     |
+| `make chunk`        | Segments raw JSONL data into chunk files                 |
+| `make embed`        | Computes embeddings and writes database collections      |
+| `make pipeline`     | Sequence execution of crawl, chunk, and embed stages     |
+| `make rag`          | Runs the terminal-based query agent                     |
+| `make test-model`   | Asserts correct local model availability                |
+| `make clean-cache`  | Sweeps away intermediate caches (`__pycache__`, `.pyc`)  |
