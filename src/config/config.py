@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     LLM_MODEL_NAME: str = "Qwen/Qwen3-4B-Instruct-2507"
 
     LLM_TEMPERATURE: float = 0.1
-    LLM_MAX_TOKENS: int = 1024
+    LLM_MAX_TOKENS: int = 256
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

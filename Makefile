@@ -42,6 +42,21 @@ rag:
 test-model:
 	$(PYTHON) scripts/test_model.py
 
+.PHONY: generate-testset
+generate-testset:
+	$(PYTHON) scripts/generate_testset.py
+
+.PHONY: evaluate
+evaluate:
+	$(PYTHON) scripts/run_evaluation.py
+
+.PHONY: retrieval-eval
+retrieval-eval:
+	$(PYTHON) scripts/run_retrieval_eval.py
+
+.PHONY: eval-all
+eval-all: evaluate retrieval-eval
+
 .PHONY: clean-cache
 clean-cache:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

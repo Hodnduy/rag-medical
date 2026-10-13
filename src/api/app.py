@@ -7,6 +7,24 @@ from fastapi.responses import FileResponse
 from src.api.routes import router
 from src.api.dependencies import get_rag_pipeline
 from contextlib import asynccontextmanager
+try:
+    import pydantic_ai.mcp
+    if not hasattr(pydantic_ai.mcp, "MCPServerStreamableHTTP"):
+        pydantic_ai.mcp.MCPServerStreamableHTTP = getattr(pydantic_ai.mcp, "StreamableHttpTransport", None)
+except Exception:
+    pass
+
+try:
+    import phoenix as px
+    from phoenix.otel import register
+    from openinference.instrumentation.openai import OpenAIInstrumentor
+
+    px.launch_app(host="127.0.0.1", port=6006)
+    tracer_provider = register()
+    OpenAIInstrumentor().instrument(tracer_provider=tracer_provider)
+    print("[Observability] Phoenix dashboard launched successfully at http://127.0.0.1:6006")
+except Exception as e:
+    print(f"[Observability Warning] Skipping Phoenix setup: {e}")
 
 # Path to the UI directory
 UI_DIR = Path(__file__).resolve().parent.parent / "ui"

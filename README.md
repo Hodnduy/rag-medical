@@ -217,15 +217,52 @@ curl -X POST http://localhost:8080/api/chat \
 
 ---
 
-## Makefile Commands
+## 5. Evaluation
 
-| Command            | Description                                              |
-|--------------------|----------------------------------------------------------|
-| `make install`      | Installs dependencies using `uv sync`                     |
-| `make crawl`        | Ingests raw data from NHS UK website                     |
-| `make chunk`        | Segments raw JSONL data into chunk files                 |
-| `make embed`        | Computes embeddings and writes database collections      |
-| `make pipeline`     | Sequence execution of crawl, chunk, and embed stages     |
-| `make rag`          | Runs the terminal-based query agent                     |
-| `make test-model`   | Asserts correct local model availability                |
-| `make clean-cache`  | Sweeps away intermediate caches (`__pycache__`, `.pyc`)  |
+The project provides a two-tier evaluation framework:
+
+1. **Retrieval Ablation Evaluation** (`make retrieval-eval`): Evaluates retrieval quality independently of the LLM across 4 modes (Dense, BM25, Hybrid, Hybrid + Rerank) measuring **Hit@K**, **MRR@K**, and **Latency**.
+2. **End-to-End RAG Evaluation** (`make evaluate`): Evaluates the complete pipeline using the **Ragas 0.4.x** framework across 4 RAG Triad metrics (**Faithfulness**, **Answer Relevancy**, **Context Precision**, **Context Recall**).
+
+### Setup
+
+Ensure your Gemini API key is configured in `.env`:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### Evaluation Commands
+
+| Command | Script | Description | Outputs |
+| :--- | :--- | :--- | :--- |
+| `make retrieval-eval` | `scripts/run_retrieval_eval.py` | Benchmarks Dense vs BM25 vs Hybrid vs Reranker | `data/retrieval_eval_results.json` |
+| `make evaluate` | `scripts/run_evaluation.py` | Full Ragas 0.4.x RAG Triad evaluation | `data/eval_results.json`<br>`data/eval_summary.json` |
+| `make generate-testset` | `scripts/generate_testset.py` | Synthesises test cases using Gemini from NHS data | `data/eval_testset.json` |
+| `make eval-all` | — | Runs both `evaluate` and `retrieval-eval` sequentially | All of the above |
+
+### Evaluation Dataset
+
+The default evaluation dataset ([`data/eval_dataset.json`](data/eval_dataset.json)) contains **50 curated clinical questions** structured into 4 distinct categories:
+- **Simple Factual (15 questions)**: Single-condition symptoms and standard treatments.
+- **Comparative & Multi-hop (15 questions)**: Differential symptoms (e.g. Type 1 vs Type 2 diabetes, Crohn's vs Ulcerative colitis).
+- **Out-of-domain / Negative (10 questions)**: Non-NHS / unanswerable queries to test model refusal capability.
+- **Emergency / Critical (10 questions)**: Life-threatening emergencies (stroke, heart attack, sepsis, anaphylaxis) requiring emergency dispatch (999) instructions.
+
+---
+
+## Makefile Commands Reference
+
+| Command                 | Description                                                  |
+|-------------------------|--------------------------------------------------------------|
+| `make install`          | Installs dependencies using `uv sync`                        |
+| `make crawl`            | Ingests raw data from NHS UK website                         |
+| `make chunk`            | Segments raw JSONL data into chunk files                     |
+| `make embed`            | Computes embeddings and writes database collections          |
+| `make pipeline`         | Sequence execution of crawl, chunk, and embed stages         |
+| `make rag`              | Runs the terminal-based query agent                          |
+| `make test-model`       | Asserts correct local model availability                     |
+| `make retrieval-eval`   | Evaluates Dense vs BM25 vs Hybrid vs Rerank (Hit@K, MRR@K)   |
+| `make evaluate`         | Runs full RAG Triad evaluation using Ragas 0.4.x & Gemini    |
+| `make eval-all`         | Runs both retrieval and end-to-end evaluation                |
+| `make generate-testset` | Generates synthetic testset using Gemini from NHS documents  |
+| `make clean-cache`      | Sweeps away intermediate caches (`__pycache__`, `.pyc`)      |

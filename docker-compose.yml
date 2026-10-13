@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: rag_medical_api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - LLM_BASE_URL=http://host.docker.internal:8000/v1
+      - LLM_MODEL_NAME=Qwen/Qwen3-4B-Instruct-2507
+      - LLM_TEMPERATURE=0.1
+      - LLM_MAX_TOKENS=1024
+      - DATA_PATH=data
+    volumes:
+      - ./data/vector_db:/app/data/vector_db
